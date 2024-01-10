@@ -4,7 +4,6 @@ const config = require('../config');
 const { secret } = config;
 
 module.exports = (app, nextMain) => {
-
   app.post('/login', (req, resp, next) => {
     const { email, password } = req.body;
 
