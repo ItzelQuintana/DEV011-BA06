@@ -1,18 +1,17 @@
-
 const { MongoClient } = require('mongodb');
 const config = require('./config');
-// eslint-disable-next-line no-unused-vars
-const { dbUrl } = config;
-const client = new MongoClient(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+
+const client = new MongoClient(config.dbUrl);
 
 async function connect() {
   try {
     await client.connect();
-    const db = client.db('burgerqueen06');
+    const db = client.db('burgerqueen06'); // Reemplaza <NOMBRE_DB> por el nombre del db
     console.log('Base de datos conectada');
     return db;
   } catch (error) {
-    console.error('Error al conectar a la base de datos:', error.message);
+    console.error(error);
   }
 }
+
 module.exports = { connect };
