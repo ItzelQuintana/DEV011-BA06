@@ -16,12 +16,25 @@ const register = (app, routes, cb) => {
     return cb();
   }
 
-  routes[0](app, (err) => {
-    if (err) {
-      return cb(err);
-    }
-    return register(app, routes.slice(1), cb);
-  });
+  // Asegúrate de que el middleware de autenticación se ejecute antes de otros middlewares
+  if (routes[0] === auth) {
+    // Registra el middleware de autenticación primero
+    routes[0](app, (err) => {
+      if (err) {
+        return cb(err);
+      }
+      // Luego, registra otros middlewares o rutas protegidas que dependan de la autenticación
+      return register(app, routes.slice(1), cb);
+    });
+  } else {
+    // Registra otros middlewares o rutas
+    routes[0](app, (err) => {
+      if (err) {
+        return cb(err);
+      }
+      return register(app, routes.slice(1), cb);
+    });
+  }
 };
 
 module.exports = (app, next) => register(app, [

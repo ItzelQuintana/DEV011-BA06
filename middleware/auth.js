@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 
+// Middleware de autenticación que verifica la identidad del usuario utilizando decodeToken.uid
 module.exports = (secret) => (req, resp, next) => {
   // Obtener el encabezado de autorización de la solicitud.
   const { authorization } = req.headers;
@@ -40,22 +41,30 @@ module.exports = (secret) => (req, resp, next) => {
 };
 
 module.exports.isAuthenticated = (req) => {
+  // Obtener el ID de usuario y el rol de la solicitud.
   const userId = req.userId ? req.userId.toString() : null;
-  console.log(userId, 'midelware');
-  if (userId) {
+  const userRole = req.userRole;
+
+  // Imprimir información en la consola para propósitos de depuración.
+  console.log('Usuario ID:', userId, 'middleware');
+  console.log('Rol del usuario:', userRole, 'middleware');
+
+  // Verificar si hay un ID de usuario y un rol válidos.
+  if (userId && userRole) {
+    // Si hay un ID de usuario y un rol, el usuario está autenticado.
     console.log('Usuario autenticado:', userId);
     return true;
   }
+
+  // Si no hay un ID de usuario o un rol, el usuario no está autenticado.
   console.log('Usuario no autenticado');
   return false;
-
-  // TODO: Decide based on the request information whether the user is authenticated
 };
 
 module.exports.isAdmin = (req) => {
   const userRole = req.userRole ? req.userRole.toString() : null;
   if (userRole === 'admin') {
-    console.log('es administrador midelware', userRole);
+    console.log('Es administrador middleware', userRole);
     return true;
   }
   return false;
