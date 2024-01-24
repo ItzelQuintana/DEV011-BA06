@@ -14,23 +14,42 @@ module.exports = (secret) => (req, resp, next) => {
   }
 
   jwt.verify(token, secret, (err, decodedToken) => {
+    // console.log('esta decodificado midelware', decodedToken.uid);
     if (err) {
       return next(403);
     }
+    req.userId = decodedToken.uid;
+    req.userRole = decodedToken.role;
+    return next();
 
     // TODO: Verify user identity using `decodeToken.uid`
   });
+  // next();
 };
 
-module.exports.isAuthenticated = (req) => (
-  // TODO: Decide based on the request information whether the user is authenticated
-  false
-);
+module.exports.isAuthenticated = (req) => {
+  const userId = req.userId ? req.userId.toString() : null;
+  console.log(userId, 'midelware');
+  if (userId) {
+    console.log('Usuario autenticado:', userId);
+    return true;
+  }
+  console.log('Usuario no autenticado');
+  return false;
 
-module.exports.isAdmin = (req) => (
-  // TODO: Decide based on the request information whether the user is an admin
-  false
-);
+  // TODO: Decide based on the request information whether the user is authenticated
+};
+
+module.exports.isAdmin = (req) => {
+  const userRole = req.userRole ? req.userRole.toString() : null;
+  if (userRole === 'admin') {
+    console.log('es administrador midelware', userRole);
+    return true;
+  }
+  return false;
+};
+
+// TODO: Decide based on the request information whether the user is an admin
 
 module.exports.requireAuth = (req, resp, next) => (
   (!module.exports.isAuthenticated(req))

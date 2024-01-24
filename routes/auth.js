@@ -1,51 +1,47 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 const config = require('../config');
 const { connect } = require('../connect');
 
 const { secret } = config;
 
-module.exports = async (app, nextMain) => {
-  app.post('/login', async (req, res, next) => {
+module.exports = (app, nextMain) => {
+  app.post('/login', async (req, resp, next) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return next(400, { error: 'Correo electrónico y contraseña son requeridos.' });
-    }
-
     try {
-      // Conectar a la base de datos
-      const db = await connect();
+      const db = connect();
+      const collection = db.collection('users');
 
-      // Buscar al usuario por correo electrónico
-      const user = await db.collection('users').findOne({ email });
+      const userValid = await collection.findOne({ email }, { password });
+      console.log(userValid.password);
 
-      if (!user) {
-        return next(401, { error: 'Usuario no encontrado.' });
+      // console.log(userValid._id);
+
+      if (userValid) {
+        const tokenIs = jwt.sign({ uid: userValid._id, email: userValid.email, role: userValid.role }, secret, { expiresIn: '1h' });
+
+        resp.json({ 'acsses token': tokenIs });
+      } else {
+        next(401);
       }
 
-      // Verificar la contraseña
-      const passwordMatch = await bcrypt.compare(password, user.password);
+      // const authPassword = await bcrypt.compare(password, userValid.password);
+      // if (authPassword) {
+      //   const tokenIs = jwt.sign(email, secret, { expiresIn: '1h' });
+      //   console.log(tokenIs);
+      //   resp.send.json({ token: tokenIs });
+      // }
 
-      if (!passwordMatch) {
-        return next(401, { error: 'Contraseña incorrecta.' });
-      }
-
-      // Generar un token JWT
-      const token = jwt.sign({ userId: user._id, email: user.email }, secret, {
-        expiresIn: '1h', // Puedes ajustar la duración del token según tus necesidades
-      });
-
-      // Enviar el token como respuesta
-      res.json({ token });
-
-      // Cerrar la conexión a la base de datos
-      await db.close();
+      // next();
     } catch (error) {
-      console.error('Error en la autenticación:', error.message);
-      return next(500, { error: 'Error en la autenticación.' });
+      console.error(error); // Imprimir el mensaje de error en la consola
+      return next(500); // Enviar una respuesta de error al cliente
     }
+    // TODO: Authenticate the user
+    // It is necessary to confirm if the email and password
+    // match a user in the database
+    // If they match, send an access token created with JWT
   });
-
   return nextMain();
 };

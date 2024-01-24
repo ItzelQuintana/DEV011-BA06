@@ -1,48 +1,55 @@
+const bcrypt = require('bcrypt');
+const { connect } = require('../connect');
+
 module.exports = {
-  getUsers: async (req, res, next) => {
+  getUsers: async (req, resp, next) => {
     try {
-      const db = await connect();
-      const users = await db.collection('usuarios').find().toArray();
+      const db = connect();
+      const user = db.collection('user');
 
-      res.json(users);
+      // Obtener todos los usuarios de la colección
+      const users = await user.find({}, { projection: { password: 0 } }).toArray();
+      // console.log(users);
+      resp.json(users);
+
+    // TODO: Implement the necessary function to fetch the `users` collection or table
     } catch (error) {
-      console.error('Error al obtener usuarios:', error.message);
-      res.status(500).json({ error: 'Error al obtener usuarios' });
+      console.error(error);
+      next(error);
     }
   },
 
-  // TODO: Implement the necessary function to fetch the `users` collection or table
+  postUsers: async (req, resp, next) => {
+    const { email, password, role } = req.body;
 
-  initAdminUser: async () => {
+    const newUser = {
+      email,
+      password,
+      role,
+    };
+
     try {
-      const { adminEmail, adminPassword } = config;
-
-      if (!adminEmail || !adminPassword) {
-        console.log('Configuración incompleta para el usuario administrador');
-        return;
+      const db = connect();
+      const user = db.collection('user');
+      // validar si el usuario existe
+      const userExist = await user.findOne({ email });
+      if (userExist) {
+        console.log('ya existe el email');
+        return resp.status(403).json({ error: 'ya existe el email' });
+      }
+      if (!email || !password) {
+        console.log('se necesita un email y un password');
+        return resp.status(400).json({ error: 'se necesita un email y un password' });
       }
 
-      const db = await connect();
-      const existingAdmin = await db.collection('usuarios').findOne({ email: adminEmail });
+      await user.insertOne(newUser);
+      delete newUser.password;
+      resp.status(200).json({ newUser });
 
-      if (!existingAdmin) {
-        const adminUser = {
-          email: adminEmail,
-          password: bcrypt.hashSync(adminPassword, 10),
-          roles: { admin: true },
-        };
-
-        await db.collection('usuarios').insertOne(adminUser);
-        console.log('Usuario administrador creado con éxito');
-      } else {
-        console.log('Ya existe un usuario administrador en la base de datos');
-      }
-
-      await db.close();
+      console.log('Se agrego el usuario con exito');
     } catch (error) {
-      console.error('Error al inicializar el usuario administrador:', error.message);
+      console.error(error);
+      next(500);
     }
   },
-
-  // Otras funciones controladoras según sea necesario
 };

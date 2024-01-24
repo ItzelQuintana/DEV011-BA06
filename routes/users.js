@@ -1,15 +1,10 @@
 const bcrypt = require('bcrypt');
+const { connect } = require('../connect');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
-const {
-  requireAuth,
-  requireAdmin,
-} = require('../middleware/auth');
+const { getUsers, postUsers } = require('../controller/users');
 
-const {
-  getUsers,
-} = require('../controller/users');
-
-const initAdminUser = (app, next) => {
+const initAdminUser = async (app, next) => {
   const { adminEmail, adminPassword } = app.get('config');
   if (!adminEmail || !adminPassword) {
     return next();
@@ -18,16 +13,32 @@ const initAdminUser = (app, next) => {
   const adminUser = {
     email: adminEmail,
     password: bcrypt.hashSync(adminPassword, 10),
-    roles: { admin: true },
+    role: 'admin',
   };
 
-  // TODO: Create admin user
-  // First, check if adminUser already exists in the database
-  // If it doesn't exist, it needs to be saved
+  try {
+    const db = connect();
+    const usersCollection = db.collection('user');
 
-  next();
+    const adminUserExists = await usersCollection.findOne({
+      email: adminEmail,
+    });
+
+    if (!adminUserExists) {
+      await usersCollection.insertOne(adminUser);
+    } else {
+      console.error('El  administrador ya existe');
+    }
+
+    next();
+  } catch (error) {
+    // Manejar el error de la consulta a la base de datos
+    console.error(
+      error,
+    );
+    next();
+  }
 };
-
 /*
  * Español:
  *
