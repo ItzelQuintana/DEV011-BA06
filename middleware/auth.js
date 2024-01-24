@@ -1,30 +1,42 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (secret) => (req, resp, next) => {
+  // Obtener el encabezado de autorización de la solicitud.
   const { authorization } = req.headers;
 
+  // Si no hay encabezado de autorización, continuar con el siguiente middleware.
   if (!authorization) {
+    console.log('No hay encabezado de autorización.');
     return next();
   }
 
+  // Dividir el encabezado de autorización para obtener el tipo y el token.
   const [type, token] = authorization.split(' ');
 
+  // Verificar que el tipo sea 'bearer'.
   if (type.toLowerCase() !== 'bearer') {
+    console.log('El tipo de token no es "bearer".');
     return next();
   }
 
+  // Verificar el token utilizando el secreto proporcionado.
   jwt.verify(token, secret, (err, decodedToken) => {
-    // console.log('esta decodificado midelware', decodedToken.uid);
     if (err) {
+      // Si hay un error en la verificación, responder con un código 403.
+      console.log('Error de verificación de token:', err.message);
       return next(403);
     }
+
+    // Agregar el ID de usuario y el rol del usuario a la solicitud.
     req.userId = decodedToken.uid;
     req.userRole = decodedToken.role;
-    return next();
 
-    // TODO: Verify user identity using `decodeToken.uid`
+    // Imprimir información decodificada en la consola.
+    console.log('Usuario autenticado:', decodedToken.uid, '- Rol:', decodedToken.role);
+
+    // Continuar con el siguiente middleware.
+    return next();
   });
-  // next();
 };
 
 module.exports.isAuthenticated = (req) => {

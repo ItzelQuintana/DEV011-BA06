@@ -1,15 +1,18 @@
 const bcrypt = require('bcrypt');
 const { connect } = require('../connect');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-
 const { getUsers, postUsers } = require('../controller/users');
 
 const initAdminUser = async (app, next) => {
+  // Obtiene las credenciales del administrador desde la configuración de la aplicación.
   const { adminEmail, adminPassword } = app.get('config');
+
+  // Si falta alguna credencial del administrador, no se realiza ninguna acción.
   if (!adminEmail || !adminPassword) {
     return next();
   }
 
+  // Crear un objeto que representa al administrador con la información proporcionada.
   const adminUser = {
     email: adminEmail,
     password: bcrypt.hashSync(adminPassword, 10),
@@ -17,25 +20,29 @@ const initAdminUser = async (app, next) => {
   };
 
   try {
+    // Conectar a la base de datos.
     const db = connect();
     const usersCollection = db.collection('user');
 
+    // Intentar buscar un usuario con el correo electrónico del administrador en la colección de usuarios.
     const adminUserExists = await usersCollection.findOne({
       email: adminEmail,
     });
 
+    // Si no se encuentra un usuario con ese correo electrónico, insertar el objeto del administrador en la colección de usuarios.
     if (!adminUserExists) {
       await usersCollection.insertOne(adminUser);
     } else {
-      console.error('El  administrador ya existe');
+      console.error('El administrador ya existe');
     }
 
+    // Continuar con el flujo.
     next();
   } catch (error) {
-    // Manejar el error de la consulta a la base de datos
-    console.error(
-      error,
-    );
+    // Manejar cualquier error que ocurra durante el proceso.
+    console.error('Error durante la inicialización del administrador:', error);
+
+    // Continuar con el flujo.
     next();
   }
 };
